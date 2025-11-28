@@ -1,0 +1,131 @@
+// Prisma schema for FlowSight
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+// Models
+model Workspace {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  workspaceId     String   @unique // e.g., "workspace_demo" or "workspace_{userId}"
+  realDataEnabled Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  orders        Order[]
+  subscriptions Subscription[]
+  activities    Activity[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  email       String
+  name        String
+  password    String
+  role        Role       @default(USER)
+  workspaceId String?    @db.ObjectId  // Temporarily optional to fix existing users
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions      Session[]
+  orders        Order[]
+  subscriptions Subscription[]
+  activities    Activity[]
+
+  @@index([email, workspaceId]) // Index for faster lookups
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Order {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String      @db.ObjectId
+  workspaceId String      @db.ObjectId
+  amount      Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+model Subscription {
+  id          String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String             @db.ObjectId
+  workspaceId String             @db.ObjectId
+  plan        String
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime
+  endDate     DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Activity {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  workspaceId String   @db.ObjectId
+  action      String
+  description String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}
+
