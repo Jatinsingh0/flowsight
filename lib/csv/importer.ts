@@ -82,6 +82,11 @@ export async function importUsers(
     }
   }
 
+  // Enable real data mode after successful import
+  if (result.imported > 0) {
+    await enableRealDataMode(workspaceId);
+  }
+
   return result;
 }
 

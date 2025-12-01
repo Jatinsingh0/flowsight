@@ -14,7 +14,7 @@ export async function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-space-grotesk font-bold text-textBase">
+            <span className="text-xl font-space-grotesk font-bold bg-gradient-to-r from-accent to-accent2 bg-clip-text text-transparent">
               FlowSight
             </span>
           </Link>

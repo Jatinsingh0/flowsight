@@ -13,18 +13,19 @@ export async function shouldShowDemoBanner(): Promise<boolean> {
   const workspace = await getCurrentUserWorkspace(user.userId);
   if (!workspace) return true; // Show banner if no workspace
 
-  // If realDataEnabled is false, show banner
-  if (!workspace.realDataEnabled) return true;
-
-  // If realDataEnabled is true, check if workspace has actual data
-  const [hasOrders, hasUsers, hasSubscriptions] = await Promise.all([
+  // Check if workspace has actual IMPORTED data (not just the logged-in user)
+  const [hasOrders, totalUsers, hasSubscriptions] = await Promise.all([
     prisma.order.count({ where: { workspaceId: workspace.id } }),
     prisma.user.count({ where: { workspaceId: workspace.id } }),
     prisma.subscription.count({ where: { workspaceId: workspace.id } }),
   ]);
 
-  // Hide banner if workspace has imported data
-  const hasImportedData = hasOrders > 0 || hasUsers > 0 || hasSubscriptions > 0;
+  // Check if there are imported users (excluding the logged-in user)
+  const hasImportedUsers = totalUsers > 1;
+
+  // Show banner if there's no imported data (orders, subscriptions, or imported users)
+  // New users should see the banner until they upload CSV files
+  const hasImportedData = hasOrders > 0 || hasSubscriptions > 0 || hasImportedUsers;
   return !hasImportedData;
 }
 

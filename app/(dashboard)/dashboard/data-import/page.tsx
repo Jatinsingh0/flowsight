@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getCurrentUserWorkspace } from "@/lib/workspace";
 import { redirect } from "next/navigation";
 import { DataImportClient } from "@/components/data-import/data-import-client";
+import { prisma } from "@/lib/prisma";
 
 export default async function DataImportPage() {
   const user = await getCurrentUser();
@@ -10,6 +11,20 @@ export default async function DataImportPage() {
   }
 
   const workspace = await getCurrentUserWorkspace(user.userId);
+  
+  // Check if workspace has actual IMPORTED data (not just the logged-in user)
+  let hasImportedData = false;
+  if (workspace) {
+    const [hasOrders, totalUsers, hasSubscriptions] = await Promise.all([
+      prisma.order.count({ where: { workspaceId: workspace.id } }),
+      prisma.user.count({ where: { workspaceId: workspace.id } }),
+      prisma.subscription.count({ where: { workspaceId: workspace.id } }),
+    ]);
+
+    // Check if there are imported users (excluding the logged-in user)
+    const hasImportedUsers = totalUsers > 1;
+    hasImportedData = hasOrders > 0 || hasSubscriptions > 0 || hasImportedUsers;
+  }
 
   return (
     <div className="relative space-y-8 pb-8">
@@ -38,11 +53,11 @@ export default async function DataImportPage() {
         {/* Mode Banner */}
         {workspace && (
           <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
-            workspace.realDataEnabled
+            hasImportedData
               ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
               : "border-amber-500/20 bg-amber-500/10 text-amber-300"
           }`}>
-            {workspace.realDataEnabled ? (
+            {hasImportedData ? (
               <span>✅ Real Data — You are viewing analytics built from your imported CSV files.</span>
             ) : (
               <span>ℹ️ Currently viewing demo data. Once you import your CSV files, you'll see only your imported data and demo data will be hidden.</span>

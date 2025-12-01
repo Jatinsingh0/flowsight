@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github } from "lucide-react";
+import { Github, Linkedin } from "lucide-react";
 
 export function Footer() {
   return (
@@ -33,13 +33,22 @@ export function Footer() {
               Features
             </Link>
             <a
-              href="https://github.com"
+              href="https://github.com/Jatinsingh0"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm text-textMuted hover:text-textBase transition-colors"
             >
               <Github className="h-4 w-4" />
               GitHub
+            </a>
+            <a
+              href="https://www.linkedin.com/in/jatinsinghnextjs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-textMuted hover:text-textBase transition-colors"
+            >
+              <Linkedin className="h-4 w-4" />
+              LinkedIn
             </a>
           </div>
         </div>

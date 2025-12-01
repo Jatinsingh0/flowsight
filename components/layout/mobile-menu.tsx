@@ -139,7 +139,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
             <Link
               href="/"
               onClick={handleLinkClick}
-              className="text-xl font-space-grotesk font-bold text-textBase"
+              className="text-xl font-space-grotesk font-bold bg-gradient-to-r from-accent to-accent2 bg-clip-text text-transparent"
             >
               FlowSight
             </Link>

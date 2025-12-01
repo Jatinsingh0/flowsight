@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LucideIcon, Download, Upload, Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,12 +23,36 @@ interface ImportState {
   lastImported?: string;
 }
 
+// Helper function to convert error objects to strings
+function formatErrors(errors: any[]): string[] {
+  if (!errors || errors.length === 0) return [];
+  return errors.map((error) => {
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object") {
+      if (error.message) {
+        return error.row ? `Row ${error.row}: ${error.message}` : error.message;
+      }
+      return JSON.stringify(error);
+    }
+    return String(error);
+  });
+}
+
 export function ImportCard({ type, title, description, icon: Icon, workspaceId }: ImportCardProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [importState, setImportState] = useState<ImportState>({
     status: "idle",
     message: "",
   });
+
+  // Load uploaded filename from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(`imported-file-${type}`);
+    if (stored) {
+      setUploadedFileName(stored);
+    }
+  }, [type]);
 
   const downloadTemplate = () => {
     window.open(`/api/data-import/template?type=${type}`, "_blank");
@@ -39,6 +63,9 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
     if (selectedFile) {
       setFile(selectedFile);
       setImportState({ status: "idle", message: "" });
+      // Clear stored uploaded filename when selecting a new file
+      setUploadedFileName(null);
+      localStorage.removeItem(`imported-file-${type}`);
     }
   };
 
@@ -63,7 +90,7 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
         setImportState({
           status: "error",
           message: data.error || "Validation failed",
-          errors: data.details || data.validation?.errors || [],
+          errors: formatErrors(data.details || data.validation?.errors || []),
         });
         return;
       }
@@ -76,7 +103,7 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
         setImportState({
           status: "error",
           message: `Validation failed: ${errorCount} error(s) found`,
-          errors: validation.errors.map((e: any) => `Row ${e.row}: ${e.message}`),
+          errors: formatErrors(validation.errors),
         });
       } else {
         setImportState({
@@ -113,18 +140,24 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
         setImportState({
           status: "error",
           message: data.error || "Import failed",
-          errors: data.details || data.validation?.errors || [],
+          errors: formatErrors(data.details || data.validation?.errors || []),
         });
         return;
       }
 
       const { result } = data;
+      const fileName = file.name;
+      
+      // Save uploaded filename to localStorage so it persists after page refresh
+      localStorage.setItem(`imported-file-${type}`, fileName);
+      setUploadedFileName(fileName);
+      
       setImportState({
         status: "success",
         message: `Successfully imported ${result.imported} ${type}`,
         imported: result.imported,
         skipped: result.skipped,
-        errors: result.errors.length > 0 ? result.errors : undefined,
+        errors: result.errors && result.errors.length > 0 ? formatErrors(result.errors) : undefined,
         lastImported: new Date().toLocaleString(),
       });
 
@@ -179,10 +212,10 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
           >
             <Upload className="mb-2 h-8 w-8 text-textMuted" />
             <span className="text-sm font-medium text-textBase">
-              {file ? file.name : "Choose CSV file"}
+              {file ? file.name : uploadedFileName ? uploadedFileName : "Choose CSV file"}
             </span>
             <span className="mt-1 text-xs text-textMuted">
-              {file ? "Click to change file" : "or drag and drop"}
+              {file || uploadedFileName ? "Click to change file" : "or drag and drop"}
             </span>
           </label>
           <input

@@ -14,19 +14,32 @@ export async function getDataWorkspace() {
 
   if (user) {
     workspace = await getCurrentUserWorkspace(user.userId);
-    if (workspace && workspace.realDataEnabled) {
-      // Check if workspace has actual imported data
-      const [hasOrders, hasUsers, hasSubscriptions] = await Promise.all([
+    if (workspace) {
+      // Check if workspace has actual IMPORTED data (not just the logged-in user themselves)
+      // Orders and subscriptions are always imported, so they count as real data
+      // Users count as imported data only if there are OTHER users besides the logged-in user
+      const [hasOrders, totalUsers, hasSubscriptions] = await Promise.all([
         prisma.order.count({ where: { workspaceId: workspace.id } }),
         prisma.user.count({ where: { workspaceId: workspace.id } }),
         prisma.subscription.count({ where: { workspaceId: workspace.id } }),
       ]);
 
-      // Only use real data if workspace has actual imported data
-      useDemoData = hasOrders === 0 && hasUsers === 0 && hasSubscriptions === 0;
-    } else {
-      // If realDataEnabled is false, definitely use demo
-      useDemoData = true;
+      // Check if there are imported users (excluding the logged-in user)
+      // If totalUsers > 1, it means there are imported users
+      const hasImportedUsers = totalUsers > 1;
+
+      // Use real data ONLY if there are orders, subscriptions, or imported users
+      // New users should see demo data until they upload CSV files
+      const hasImportedData = hasOrders > 0 || hasSubscriptions > 0 || hasImportedUsers;
+      useDemoData = !hasImportedData;
+      
+      // If we have imported data but flag isn't set, enable it (fixes edge cases)
+      if (!useDemoData && !workspace.realDataEnabled) {
+        await prisma.workspace.update({
+          where: { id: workspace.id },
+          data: { realDataEnabled: true },
+        });
+      }
     }
   }
 
