@@ -1,5 +1,5 @@
 import { getCurrentUser } from "./auth";
-import { getCurrentUserWorkspace } from "./workspace";
+import { getCurrentUserWorkspace, isDemoUser, DEMO_WORKSPACE_ID } from "./workspace";
 import { prisma } from "./prisma";
 
 export interface WorkspaceInfo {
@@ -36,6 +36,10 @@ export async function getWorkspaceInfo(): Promise<WorkspaceInfo | null> {
     workspaceName = `${userData.name}'s Workspace`;
   }
 
+  // Check if user is demo user or workspace is demo workspace
+  const isDemo = await isDemoUser();
+  const isDemoWorkspace = workspace.workspaceId === DEMO_WORKSPACE_ID;
+
   // Get data counts
   const [usersCount, ordersCount, subscriptionsCount] = await Promise.all([
     prisma.user.count({ where: { workspaceId: workspace.id } }),
@@ -43,9 +47,23 @@ export async function getWorkspaceInfo(): Promise<WorkspaceInfo | null> {
     prisma.subscription.count({ where: { workspaceId: workspace.id } }),
   ]);
 
+  // For mode determination, check if there's actual IMPORTED data
+  // (not just the logged-in user themselves or demo workspace data)
+  // Users count as imported data only if there are OTHER users besides the logged-in user
+  const hasImportedUsers = usersCount > 1;
+  const hasImportedData = ordersCount > 0 || subscriptionsCount > 0 || hasImportedUsers;
+
+  // Determine mode: Always Demo for demo users/workspace, otherwise check for imported data
+  const mode: "Demo" | "Real" = (isDemo || isDemoWorkspace) 
+    ? "Demo" 
+    : (workspace.realDataEnabled && hasImportedData)
+    ? "Real"
+    : "Demo";
+
   // Find the earliest import date (first order, user, or subscription)
+  // Only calculate if in Real Mode
   let realDataSince: Date | null = null;
-  if (workspace.realDataEnabled && (ordersCount > 0 || usersCount > 0 || subscriptionsCount > 0)) {
+  if (mode === "Real" && hasImportedData) {
     const dates: Date[] = [];
 
     if (ordersCount > 0) {
@@ -57,13 +75,15 @@ export async function getWorkspaceInfo(): Promise<WorkspaceInfo | null> {
       if (firstOrder) dates.push(firstOrder.createdAt);
     }
 
-    if (usersCount > 0) {
-      const firstUser = await prisma.user.findFirst({
+    if (hasImportedUsers) {
+      // Get first imported user (not the logged-in user)
+      const allUsers = await prisma.user.findMany({
         where: { workspaceId: workspace.id },
         orderBy: { createdAt: "asc" },
-        select: { createdAt: true },
+        select: { id: true, createdAt: true },
       });
-      if (firstUser) dates.push(firstUser.createdAt);
+      const importedUser = allUsers.find(u => u.id !== user.userId);
+      if (importedUser) dates.push(importedUser.createdAt);
     }
 
     if (subscriptionsCount > 0) {
@@ -79,11 +99,6 @@ export async function getWorkspaceInfo(): Promise<WorkspaceInfo | null> {
       realDataSince = new Date(Math.min(...dates.map(d => d.getTime())));
     }
   }
-
-  const mode: "Demo" | "Real" = workspace.realDataEnabled && 
-    (ordersCount > 0 || usersCount > 0 || subscriptionsCount > 0) 
-    ? "Real" 
-    : "Demo";
 
   return {
     name: workspaceName,
