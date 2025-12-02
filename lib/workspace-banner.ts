@@ -1,14 +1,20 @@
 import { getCurrentUser } from "./auth";
-import { getCurrentUserWorkspace } from "./workspace";
+import { getCurrentUserWorkspace, isDemoUser } from "./workspace";
 import { prisma } from "./prisma";
 
 /**
  * Check if demo mode banner should be shown
  * Returns false if user has imported CSV data
+ * Always returns true for demo users
  */
 export async function shouldShowDemoBanner(): Promise<boolean> {
   const user = await getCurrentUser();
   if (!user) return false;
+
+  // Always show banner for demo users
+  if (await isDemoUser()) {
+    return true;
+  }
 
   const workspace = await getCurrentUserWorkspace(user.userId);
   if (!workspace) return true; // Show banner if no workspace

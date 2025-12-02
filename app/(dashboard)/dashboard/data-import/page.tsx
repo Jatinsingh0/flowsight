@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getCurrentUserWorkspace } from "@/lib/workspace";
+import { getCurrentUserWorkspace, isDemoUser } from "@/lib/workspace";
 import { redirect } from "next/navigation";
 import { DataImportClient } from "@/components/data-import/data-import-client";
 import { prisma } from "@/lib/prisma";
@@ -10,11 +10,13 @@ export default async function DataImportPage() {
     redirect("/login");
   }
 
+  const isDemo = await isDemoUser();
   const workspace = await getCurrentUserWorkspace(user.userId);
   
   // Check if workspace has actual IMPORTED data (not just the logged-in user)
+  // For demo users, always show demo mode
   let hasImportedData = false;
-  if (workspace) {
+  if (!isDemo && workspace) {
     const [hasOrders, totalUsers, hasSubscriptions] = await Promise.all([
       prisma.order.count({ where: { workspaceId: workspace.id } }),
       prisma.user.count({ where: { workspaceId: workspace.id } }),
@@ -67,7 +69,7 @@ export default async function DataImportPage() {
       </div>
 
       {/* Import Cards */}
-      <DataImportClient workspaceId={workspace?.id || ""} />
+      <DataImportClient workspaceId={workspace?.id || ""} isDemoUser={isDemo} />
     </div>
   );
 }

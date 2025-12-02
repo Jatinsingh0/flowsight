@@ -1,6 +1,8 @@
 import { prisma } from "./prisma";
+import { getCurrentUser } from "./auth";
 
-const DEMO_WORKSPACE_ID = "workspace_demo";
+export const DEMO_WORKSPACE_ID = "workspace_demo";
+export const DEMO_USER_EMAIL = "admin@flowsight.dev";
 
 /**
  * Get or create workspace for a user
@@ -134,5 +136,42 @@ export async function hasRealDataEnabled(workspaceId: string): Promise<boolean> 
 export async function getWorkspaceIdString(userId: string): Promise<string> {
   const workspace = await getCurrentUserWorkspace(userId);
   return workspace?.workspaceId ?? DEMO_WORKSPACE_ID;
+}
+
+/**
+ * Check if current user is a demo user
+ * Demo users are identified by:
+ * 1. Email is admin@flowsight.dev
+ * 2. Their workspace is the demo workspace
+ */
+export async function isDemoUser(): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  // Check by email
+  const userRecord = await prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { email: true, workspaceId: true },
+  });
+
+  if (!userRecord) return false;
+
+  // Check if email is demo email
+  if (userRecord.email === DEMO_USER_EMAIL) {
+    return true;
+  }
+
+  // Check if workspace is demo workspace
+  if (userRecord.workspaceId) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: userRecord.workspaceId },
+      select: { workspaceId: true },
+    });
+    if (workspace?.workspaceId === DEMO_WORKSPACE_ID) {
+      return true;
+    }
+  }
+
+  return false;
 }
 

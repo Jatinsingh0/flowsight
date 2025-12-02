@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "Admin123";
 const DEMO_PASSWORD = "demo123";
 
 const demoUsers = [

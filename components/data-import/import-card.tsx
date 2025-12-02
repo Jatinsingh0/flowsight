@@ -10,6 +10,7 @@ interface ImportCardProps {
   description: string;
   icon: LucideIcon;
   workspaceId: string;
+  isDemoUser?: boolean;
 }
 
 type ImportStatus = "idle" | "validating" | "uploading" | "success" | "error";
@@ -38,27 +39,43 @@ function formatErrors(errors: any[]): string[] {
   });
 }
 
-export function ImportCard({ type, title, description, icon: Icon, workspaceId }: ImportCardProps) {
+export function ImportCard({ type, title, description, icon: Icon, workspaceId, isDemoUser = false }: ImportCardProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [showDemoPopup, setShowDemoPopup] = useState(false);
   const [importState, setImportState] = useState<ImportState>({
     status: "idle",
     message: "",
   });
 
-  // Load uploaded filename from localStorage on mount
+  // Load uploaded filename from localStorage on mount (only for non-demo users)
   useEffect(() => {
+    if (isDemoUser) {
+      // Clear any stored filenames for demo users
+      localStorage.removeItem(`imported-file-${type}`);
+      setUploadedFileName(null);
+      return;
+    }
+    
     const stored = localStorage.getItem(`imported-file-${type}`);
     if (stored) {
       setUploadedFileName(stored);
     }
-  }, [type]);
+  }, [type, isDemoUser]);
 
   const downloadTemplate = () => {
     window.open(`/api/data-import/template?type=${type}`, "_blank");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isDemoUser) {
+      e.preventDefault();
+      setShowDemoPopup(true);
+      // Clear the file input
+      e.target.value = "";
+      return;
+    }
+
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -70,6 +87,10 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
   };
 
   const handleValidate = async () => {
+    if (isDemoUser) {
+      setShowDemoPopup(true);
+      return;
+    }
     if (!file) return;
 
     setImportState({ status: "validating", message: "Validating CSV file..." });
@@ -120,6 +141,10 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
   };
 
   const handleImport = async () => {
+    if (isDemoUser) {
+      setShowDemoPopup(true);
+      return;
+    }
     if (!file) return;
 
     setImportState({ status: "uploading", message: "Importing data..." });
@@ -179,7 +204,43 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
   };
 
   return (
-    <div className="rounded-xl border border-borderSubtle bg-card/50 backdrop-blur-sm p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-accent/5">
+    <>
+      {/* Demo User Popup Modal */}
+      {showDemoPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowDemoPopup(false)}>
+          <div className="relative mx-4 w-full max-w-md rounded-xl border border-borderSubtle bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
+                <AlertCircle className="h-6 w-6 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-textBase">Demo Account</h3>
+            </div>
+            <p className="mb-6 text-sm leading-relaxed text-textMuted">
+              Please login or register with your real account to import data. This is a demo account provided by FlowSight for exploring the dashboard features.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowDemoPopup(false)}
+                variant="outline"
+                className="flex-1 border-borderSubtle"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowDemoPopup(false);
+                  window.location.href = "/login";
+                }}
+                className="flex-1 bg-accent hover:bg-accent-soft"
+              >
+                Go to Login
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`rounded-xl border border-borderSubtle bg-card/50 backdrop-blur-sm p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-accent/5 ${isDemoUser ? "opacity-75" : ""}`}>
       <div className="mb-4 flex items-start gap-4">
         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
           <Icon className="h-6 w-6 text-accent" />
@@ -208,14 +269,21 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
         <div className="space-y-2">
           <label
             htmlFor={`file-${type}`}
-            className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-borderSubtle bg-card/30 p-6 transition-colors hover:border-accent/50 hover:bg-card/50"
+            onClick={(e) => {
+              if (isDemoUser) {
+                e.preventDefault();
+                setShowDemoPopup(true);
+                return false;
+              }
+            }}
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-borderSubtle bg-card/30 p-6 transition-colors ${isDemoUser ? "cursor-not-allowed opacity-60" : "hover:border-accent/50 hover:bg-card/50"}`}
           >
             <Upload className="mb-2 h-8 w-8 text-textMuted" />
             <span className="text-sm font-medium text-textBase">
-              {file ? file.name : uploadedFileName ? uploadedFileName : "Choose CSV file"}
+              {isDemoUser ? "Choose CSV file" : file ? file.name : uploadedFileName ? uploadedFileName : "Choose CSV file"}
             </span>
             <span className="mt-1 text-xs text-textMuted">
-              {file || uploadedFileName ? "Click to change file" : "or drag and drop"}
+              {isDemoUser ? "or drag and drop" : file || uploadedFileName ? "Click to change file" : "or drag and drop"}
             </span>
           </label>
           <input
@@ -223,6 +291,14 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
             type="file"
             accept=".csv"
             onChange={handleFileChange}
+            disabled={isDemoUser}
+            onClick={(e) => {
+              if (isDemoUser) {
+                e.preventDefault();
+                setShowDemoPopup(true);
+                return false;
+              }
+            }}
             className="hidden"
           />
         </div>
@@ -234,7 +310,7 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
               onClick={handleValidate}
               variant="outline"
               size="sm"
-              disabled={importState.status === "validating" || importState.status === "uploading"}
+              disabled={isDemoUser || importState.status === "validating" || importState.status === "uploading"}
             >
               {importState.status === "validating" ? (
                 <>
@@ -249,6 +325,7 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
               onClick={handleImport}
               size="sm"
               disabled={
+                isDemoUser ||
                 importState.status === "validating" ||
                 importState.status === "uploading" ||
                 importState.status === "error"
@@ -339,6 +416,7 @@ export function ImportCard({ type, title, description, icon: Icon, workspaceId }
         </p>
       </div>
     </div>
+    </>
   );
 }
 
