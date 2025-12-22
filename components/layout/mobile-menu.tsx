@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   CreditCard,
   Activity,
+  TrendingUp,
   Settings,
   Upload,
   LogOut,
@@ -197,6 +198,14 @@ export function MobileMenu({ user }: MobileMenuProps) {
                   >
                     <Activity className="h-5 w-5" />
                     <span>Activity</span>
+                  </Link>
+                  <Link
+                    href="/dashboard/compare"
+                    onClick={handleLinkClick}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-textMuted hover:text-textBase hover:bg-accent/10 transition-colors"
+                  >
+                    <TrendingUp className="h-5 w-5" />
+                    <span>Compare</span>
                   </Link>
                   <Link
                     href="/dashboard/data-import"

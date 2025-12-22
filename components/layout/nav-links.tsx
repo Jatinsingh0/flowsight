@@ -95,6 +95,17 @@ export function NavLinks({ userEmail }: NavLinksProps) {
         Activity
       </Link>
       <Link
+        href="/dashboard/compare"
+        className={cn(
+          "text-sm transition-colors rounded-md px-3 py-1.5",
+          isActive("/dashboard/compare")
+            ? "text-textBase bg-accent/10 font-medium"
+            : "text-textMuted hover:text-textBase hover:bg-accent/5"
+        )}
+      >
+        Compare
+      </Link>
+      <Link
         href="/dashboard/data-import"
         className={cn(
           "text-sm transition-colors rounded-md px-3 py-1.5",
