@@ -1,6 +1,6 @@
 import { getComparativeAnalytics } from "@/lib/compare";
 import { CompareCard } from "@/components/cards/compare-card";
-import { TrendingUp, Calendar } from "lucide-react";
+import { TrendingUp, Calendar, Info } from "lucide-react";
 
 export default async function ComparePage() {
   try {
@@ -47,7 +47,7 @@ export default async function ComparePage() {
                 Week Over Week
               </h2>
               <p className="text-sm text-textMuted">
-                This week vs last week comparison
+                New activity this week vs last week
               </p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export default async function ComparePage() {
                 Month Over Month
               </h2>
               <p className="text-sm text-textMuted">
-                This month vs last month comparison
+                New activity this month vs last month
               </p>
             </div>
           </div>
@@ -87,6 +87,56 @@ export default async function ComparePage() {
               isRevenue={true}
             />
             <CompareCard metric={analytics.monthOverMonth.subscriptions} />
+          </div>
+        </div>
+
+        {/* Info Banner - Moved to bottom with improved styling */}
+        <div className="mx-auto max-w-4xl mt-12">
+          <div className="rounded-xl border border-accent/30 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-6 shadow-sm backdrop-blur-sm">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/20 border border-accent/30">
+                  <Info className="h-5 w-5 text-accent" />
+                </div>
+              </div>
+              <div className="flex-1 space-y-3">
+                <h3 className="text-base font-semibold text-textBase">
+                  How these metrics work
+                </h3>
+                <div className="grid gap-2 text-sm text-textMuted md:grid-cols-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-accent font-medium">•</span>
+                    <span>
+                      <strong className="text-textBase">Users:</strong> New users created in that period
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-accent font-medium">•</span>
+                    <span>
+                      <strong className="text-textBase">Orders:</strong> Orders created in that period
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-accent font-medium">•</span>
+                    <span>
+                      <strong className="text-textBase">Revenue:</strong> Sum of completed orders in that period
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-accent font-medium">•</span>
+                    <span>
+                      <strong className="text-textBase">Subscriptions:</strong> Active subscriptions created in that period
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-lg bg-background/50 border border-borderSubtle p-3">
+                  <p className="text-xs text-textMuted leading-relaxed">
+                    <strong className="text-textBase">💡 Note:</strong> Revenue and orders can come from existing users, not just new ones. 
+                    This is why you might see revenue in a period with 0 new users — existing customers continue to make purchases.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

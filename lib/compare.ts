@@ -334,28 +334,28 @@ export async function getComparativeAnalytics(): Promise<ComparativeAnalytics> {
   // Build week-over-week data
   const weekOverWeek: WeekOverWeekData = {
     users: {
-      label: "Users",
+      label: "New Users",
       current: currentWeekUsers,
       previous: lastWeekUsers,
       changePercent: calculateChangePercent(currentWeekUsers, lastWeekUsers),
       positive: currentWeekUsers >= lastWeekUsers,
     },
     orders: {
-      label: "Orders",
+      label: "New Orders",
       current: currentWeekOrders,
       previous: lastWeekOrders,
       changePercent: calculateChangePercent(currentWeekOrders, lastWeekOrders),
       positive: currentWeekOrders >= lastWeekOrders,
     },
     revenue: {
-      label: "Revenue",
+      label: "New Revenue",
       current: currentWeekRevenue,
       previous: lastWeekRevenue,
       changePercent: calculateChangePercent(currentWeekRevenue, lastWeekRevenue),
       positive: currentWeekRevenue >= lastWeekRevenue,
     },
     subscriptions: {
-      label: "Subscriptions",
+      label: "New Subscriptions",
       current: currentWeekSubscriptions,
       previous: lastWeekSubscriptions,
       changePercent: calculateChangePercent(
@@ -369,28 +369,28 @@ export async function getComparativeAnalytics(): Promise<ComparativeAnalytics> {
   // Build month-over-month data
   const monthOverMonth: MonthOverMonthData = {
     users: {
-      label: "Users",
+      label: "New Users",
       current: currentMonthUsers,
       previous: lastMonthUsers,
       changePercent: calculateChangePercent(currentMonthUsers, lastMonthUsers),
       positive: currentMonthUsers >= lastMonthUsers,
     },
     orders: {
-      label: "Orders",
+      label: "New Orders",
       current: currentMonthOrders,
       previous: lastMonthOrders,
       changePercent: calculateChangePercent(currentMonthOrders, lastMonthOrders),
       positive: currentMonthOrders >= lastMonthOrders,
     },
     revenue: {
-      label: "Revenue",
+      label: "New Revenue",
       current: currentMonthRevenue,
       previous: lastMonthRevenue,
       changePercent: calculateChangePercent(currentMonthRevenue, lastMonthRevenue),
       positive: currentMonthRevenue >= lastMonthRevenue,
     },
     subscriptions: {
-      label: "Subscriptions",
+      label: "New Subscriptions",
       current: currentMonthSubscriptions,
       previous: lastMonthSubscriptions,
       changePercent: calculateChangePercent(
