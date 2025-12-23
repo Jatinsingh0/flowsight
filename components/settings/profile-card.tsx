@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -20,26 +21,61 @@ function getInitials(name?: string | null) {
 }
 
 export function ProfileCard({ name, email, role }: ProfileCardProps) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(name || "");
   const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSaving(true);
     setStatus(null);
+    setError(null);
 
-    // Simulate request
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setStatus("Profile updated (demo only)");
+    // Validate name
+    const trimmedName = displayName.trim();
+    if (trimmedName.length === 0) {
+      setError("Name cannot be empty");
+      setIsSaving(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/settings/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: trimmedName }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to update profile");
+        setIsSaving(false);
+        return;
+      }
+
+      setStatus("Profile updated successfully");
+      setIsSaving(false);
+      // Refresh the page to show updated name
+      setTimeout(() => {
+        router.refresh();
+      }, 1000);
+    } catch (err) {
+      console.error("Profile update error:", err);
+      setError("Failed to update profile. Please try again.");
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="rounded-2xl border border-borderSubtle bg-card/50 backdrop-blur-sm p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-accent/5">
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-xl font-semibold text-white">
-          {getInitials(name)}
+          {getInitials(displayName || name || null)}
         </div>
         <div>
           <p className="text-sm uppercase tracking-wide text-textMuted">
@@ -79,6 +115,9 @@ export function ProfileCard({ name, email, role }: ProfileCardProps) {
         >
           {isSaving ? "Saving..." : "Update profile"}
         </Button>
+        {error && (
+          <p className="text-center text-sm text-red-400">{error}</p>
+        )}
         {status && (
           <p className="text-center text-sm text-emerald-400">{status}</p>
         )}
